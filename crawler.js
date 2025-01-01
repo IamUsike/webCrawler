@@ -1,6 +1,33 @@
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom; //allows node to access dom apis
 
+async function crawlPage(currentURL) {
+  console.log(`actively crawling ${currentURL}`);
+  try {
+    const resp = await fetch(currentURL);
+
+    if (resp.status > 399) {
+      console.log(
+        `Error in fetch with status code: ${resp.status} on page: ${currentURL} `
+      );
+      return;
+    }
+
+    const contentType = resp.headers.get("content-type");
+    // console.log(resp.headers)
+    if (!contentType.includes("text/html")) {
+      console.log(
+        `non html response, content type ${contentType}, on page: ${currentURL}`
+      );
+      return;
+    }
+
+    console.log(await resp.text());
+  } catch (error) {
+    console.log(`Error in fetch: ${error.message}`);
+  }
+}
+
 function getURLsFromHTML(htmlBody, baseURL) {
   const urls = [];
   const dom = new JSDOM(htmlBody);
@@ -8,20 +35,19 @@ function getURLsFromHTML(htmlBody, baseURL) {
   for (const linkElement of linkElements) {
     if (linkElement.href.slice(0, 1) === "/") {
       //relative URL
-      try{
-      const urlObj = new URL(`${baseURL}${linkElement.href}`);
-      urls.push(`${baseURL}${linkElement.href}`);
-      }catch(err){
-        console.log(`Error with relative URLs: ${err.message}`)
-      }
-      
-    } else {
-      //absolute URLs 
       try {
-        const urlObj = new URL(linkElement.href)
-        urls.push(linkElement.href)
+        const urlObj = new URL(`${baseURL}${linkElement.href}`);
+        urls.push(`${baseURL}${linkElement.href}`);
+      } catch (err) {
+        console.log(`Error with relative URLs: ${err.message}`);
+      }
+    } else {
+      //absolute URLs
+      try {
+        const urlObj = new URL(linkElement.href);
+        urls.push(linkElement.href);
       } catch (error) {
-        console.log(`Fucked up absolute URL: ${error.message}`)
+        console.log(`Fucked up absolute URL: ${error.message}`);
       }
     }
   }
@@ -43,4 +69,5 @@ function normalizeURL(urlString) {
 module.exports = {
   normalizeURL,
   getURLsFromHTML,
+  crawlPage,
 };

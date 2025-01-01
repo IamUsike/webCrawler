@@ -1,1 +1,1 @@
-### A webcrawler in js !
+### A CLI based webcrawler in js !
